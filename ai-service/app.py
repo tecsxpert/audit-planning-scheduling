@@ -92,60 +92,37 @@ def health():
     }), 200
 
 
+from routes.describe import describe_bp
+from routes.recommend import recommend_bp
+from routes.generate_report import generate_report_bp
+from routes.analyse_document import analyse_document_bp
+from routes.batch_process import batch_process_bp
+from routes.query import query_bp
+
+app.register_blueprint(describe_bp)
+app.register_blueprint(recommend_bp)
+app.register_blueprint(generate_report_bp)
+app.register_blueprint(analyse_document_bp)
+app.register_blueprint(batch_process_bp)
+app.register_blueprint(query_bp)
+
+
 # ─────────────────────────────────────────────
-# 6. DESCRIBE ENDPOINT
+# 5. HEALTH CHECK
 # ─────────────────────────────────────────────
-@app.route("/describe", methods=["POST"])
-@sanitise_input
-def describe():
-    clean_body = request.sanitised_body
+@app.route("/health", methods=["GET"])
+@limiter.exempt
+def health():
     return jsonify({
-        "message": "Describe endpoint working!",
-        "received": clean_body,
-        "status": 200
-    }), 200
-
-
-# ─────────────────────────────────────────────
-# 7. RECOMMEND ENDPOINT
-# ─────────────────────────────────────────────
-@app.route("/recommend", methods=["POST"])
-@sanitise_input
-def recommend():
-    clean_body = request.sanitised_body
-    return jsonify({
-        "message": "Recommend endpoint working!",
-        "received": clean_body,
-        "status": 200
-    }), 200
-
-
-# ─────────────────────────────────────────────
-# 8. GENERATE REPORT — Strict 10 req/min
-# ─────────────────────────────────────────────
-@app.route("/generate-report", methods=["POST"])
-@limiter.limit("10 per minute")
-@sanitise_input
-def generate_report():
-    clean_body = request.sanitised_body
-    return jsonify({
-        "message": "Generate report endpoint working!",
-        "received": clean_body,
-        "status": 200
-    }), 200
-
-
-# ─────────────────────────────────────────────
-# 9. CATEGORISE ENDPOINT
-# ─────────────────────────────────────────────
-@app.route("/categorise", methods=["POST"])
-@sanitise_input
-def categorise():
-    clean_body = request.sanitised_body
-    return jsonify({
-        "message": "Categorise endpoint working!",
-        "received": clean_body,
-        "status": 200
+        "status": "ok",
+        "message": "AI service is running",
+        "security": {
+            "talisman": "enabled",
+            "csp": "enabled",
+            "x_content_type_options": "nosniff",
+            "x_frame_options": "DENY",
+            "rate_limiting": "30 req/min default"
+        }
     }), 200
 
 
@@ -161,6 +138,7 @@ def test_sanitise():
         "received": clean_body,
         "status": 200
     }), 200
+
 
 
 # ─────────────────────────────────────────────
