@@ -12,6 +12,9 @@ from routes.sanitisation import sanitise_input
 
 app = Flask(__name__)
 
+from routes.query import query_bp
+app.register_blueprint(query_bp)
+
 
 # ─────────────────────────────────────────────
 # 1. FLASK-TALISMAN — All Security Headers
