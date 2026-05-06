@@ -135,6 +135,8 @@ def generate_report():
     }), 200
 
 
+from services.groq_client import GroqClientService
+
 # ─────────────────────────────────────────────
 # 9. CATEGORISE ENDPOINT
 # ─────────────────────────────────────────────
@@ -142,11 +144,38 @@ def generate_report():
 @sanitise_input
 def categorise():
     clean_body = request.sanitised_body
-    return jsonify({
-        "message": "Categorise endpoint working!",
-        "received": clean_body,
-        "status": 200
-    }), 200
+    text_input = clean_body.get("text", "").strip()
+
+    if not text_input:
+        return jsonify({
+            "error": "Invalid input",
+            "message": "The 'text' field is required and cannot be empty."
+        }), 400
+
+    groq_client = GroqClientService()
+    system_prompt = (
+        "You are an expert auditor categorising input text. "
+        "Classify the input into one of these predefined categories: "
+        "Financial, Operational, Compliance, IT, or Uncategorised. "
+        "Return a JSON object strictly matching this format: "
+        "{ \"category\": \"\", \"confidence\": 0.0, \"reasoning\": \"\" }"
+    )
+    
+    fallback_payload = {
+        "category": "Uncategorised",
+        "confidence": 0.0,
+        "reasoning": "Fallback invoked due to processing error."
+    }
+
+    try:
+        result = groq_client.generate_json(
+            system_prompt=system_prompt,
+            user_prompt=f"Categorise this text: {text_input}",
+            fallback_payload=fallback_payload
+        )
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify(fallback_payload), 500
 
 
 # ─────────────────────────────────────────────
