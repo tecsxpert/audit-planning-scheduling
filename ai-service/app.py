@@ -41,10 +41,7 @@ Talisman(
 # 2. HIDE SERVER VERSION
 # Fixes ZAP Finding 3
 # ─────────────────────────────────────────────
-@app.after_request
-def hide_server_info(response):
-    response.headers['Server'] = 'Tool-21-AI-Service'
-    return response
+# (Removed duplicate after_request)
 
 
 # ─────────────────────────────────────────────
@@ -73,20 +70,47 @@ def rate_limit_exceeded(e):
     }), 429
 
 
+import time
+from collections import deque
+from services.config import settings
+from services.rag_service import RagService
+
+START_TIME = time.time()
+RESPONSE_TIMES = deque(maxlen=10)
+
+@app.before_request
+def start_timer():
+    request.start_time = time.time()
+
+@app.after_request
+def record_time_and_headers(response):
+    if hasattr(request, 'start_time'):
+        elapsed = (time.time() - request.start_time) * 1000  # ms
+        RESPONSE_TIMES.append(elapsed)
+    response.headers['Server'] = 'Tool-21-AI-Service'
+    return response
+
 # ─────────────────────────────────────────────
 # 5. HEALTH CHECK
 # ─────────────────────────────────────────────
 @app.route("/health", methods=["GET"])
 @limiter.exempt
 def health():
+    rag = RagService()
+    doc_count = rag.document_count()
+    avg_time = sum(RESPONSE_TIMES) / len(RESPONSE_TIMES) if RESPONSE_TIMES else 0.0
+    uptime = time.time() - START_TIME
+
     return jsonify({
         "status": "ok",
-        "message": "AI service is running",
+        "model_name": settings.groq_model,
+        "average_response_time_ms": round(avg_time, 2),
+        "chromadb_document_count": doc_count,
+        "uptime_seconds": round(uptime, 2),
+        "cache_stats": "Not enabled",
         "security": {
             "talisman": "enabled",
             "csp": "enabled",
-            "x_content_type_options": "nosniff",
-            "x_frame_options": "DENY",
             "rate_limiting": "30 req/min default"
         }
     }), 200
