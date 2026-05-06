@@ -26,6 +26,13 @@ class GroqClientService:
         if self._client is None:
             return self._fallback_response(fallback_payload, "missing_api_key")
 
+        from services.cache_service import cache_service
+        cached_response = cache_service.get(system_prompt, user_prompt)
+        if cached_response:
+            cached_response.setdefault("meta", {})
+            cached_response["meta"]["cached"] = True
+            return cached_response
+
         try:
             completion = self._client.chat.completions.create(
                 model=settings.groq_model,
@@ -44,8 +51,10 @@ class GroqClientService:
                     "model_used": settings.groq_model,
                     "generated_at": datetime.now(UTC).isoformat(),
                     "is_fallback": False,
+                    "cached": False,
                 }
             )
+            cache_service.set(system_prompt, user_prompt, parsed)
             return parsed
         except Exception as exc:
             LOGGER.exception("Groq call failed")

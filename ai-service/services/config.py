@@ -18,6 +18,7 @@ class Settings:
     rag_collection_name: str = os.getenv(
         "RAG_COLLECTION_NAME", "audit_planning_knowledge"
     )
+    redis_url: str = os.getenv("REDIS_URL", "")
 
 
 settings = Settings()
