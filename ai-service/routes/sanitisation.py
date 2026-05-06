@@ -34,6 +34,23 @@ PROMPT_INJECTION_PATTERNS = [
 ]
 
 # ─────────────────────────────────────────────
+# 1.5 PII DETECTION PATTERNS
+# ─────────────────────────────────────────────
+PII_PATTERNS = {
+    "Email Address": r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}",
+    "Phone Number":  r"\b(\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b",
+    "Credit Card":   r"\b(?:\d{4}[\s-]?){3}\d{4}\b",
+}
+
+def detect_pii(text: str) -> str | None:
+    """Check if the text contains PII patterns. Returns the pattern name if found."""
+    for name, pattern in PII_PATTERNS.items():
+        if re.search(pattern, text):
+            return name
+    return None
+
+
+# ─────────────────────────────────────────────
 # 2. LIST OF HTML/SCRIPT PATTERNS TO STRIP
 # These are harmful HTML tags hackers inject
 # ─────────────────────────────────────────────
@@ -104,7 +121,17 @@ def sanitise_text(text: str) -> dict:
             "reason": "Prompt injection pattern detected in input"
         }
 
+    # Step 2.5 — Check for PII
+    pii_type = detect_pii(clean_text)
+    if pii_type:
+        return {
+            "clean_text": clean_text,
+            "is_safe": False,
+            "reason": f"PII detected in input: {pii_type}. For security, PII cannot be sent to the AI."
+        }
+
     # Step 3 — Check length (max 5000 characters)
+
     if len(clean_text) > 5000:
         return {
             "clean_text": clean_text[:5000],
