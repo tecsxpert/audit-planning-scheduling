@@ -120,6 +120,8 @@ def recommend():
     }), 200
 
 
+from services.jobs_service import create_job, get_job_status
+
 # ─────────────────────────────────────────────
 # 8. GENERATE REPORT — Strict 10 req/min
 # ─────────────────────────────────────────────
@@ -128,11 +130,27 @@ def recommend():
 @sanitise_input
 def generate_report():
     clean_body = request.sanitised_body
+    text_input = clean_body.get("text", "")
+    
+    if not text_input:
+        return jsonify({"error": "text is required"}), 400
+        
+    job_id = create_job(text_input)
+    
     return jsonify({
-        "message": "Generate report endpoint working!",
-        "received": clean_body,
-        "status": 200
-    }), 200
+        "message": "Report generation started",
+        "job_id": job_id,
+        "status": "processing"
+    }), 202
+
+@app.route("/jobs/<job_id>", methods=["GET"])
+@limiter.exempt
+def get_job(job_id):
+    status = get_job_status(job_id)
+    if status["status"] == "not_found":
+        return jsonify({"error": "Job not found"}), 404
+        
+    return jsonify(status), 200
 
 
 # ─────────────────────────────────────────────
