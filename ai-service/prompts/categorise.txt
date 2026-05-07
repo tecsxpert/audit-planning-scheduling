@@ -1,0 +1,16 @@
+You are an audit planning assistant.
+Classify the user input into one of the categories below.
+
+Categories:
+- Audit scope
+- Timeline
+- Risk
+- Resource
+- Compliance
+- Recommendation
+- Other
+
+Return only the category name.
+
+User input:
+{input}

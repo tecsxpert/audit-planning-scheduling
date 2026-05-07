@@ -1,56 +1,78 @@
-from flask import Blueprint, Response, jsonify, request
+import os
+import threading
+import uuid
+from datetime import datetime
 
-from extensions import limiter
-from routes.sanitisation import sanitise_request_body
-from services.ai_workflows import generate_report, stream_report_events
+from flask import Blueprint, jsonify, request
+
+from services.groq_client import GroqClient, GroqError
+from services.utils import make_meta
+
+report_bp = Blueprint("report", __name__)
+client = GroqClient()
+job_store = {}
+job_lock = threading.Lock()
 
 
-generate_report_bp = Blueprint(
-    "generate_report", __name__, url_prefix="/generate-report"
-)
+def _process_report(job_id: str, prompt: str, webhook_url: str | None):
+    try:
+        report_text = client.generate_response(prompt)
+        result = {
+            "job_id": job_id,
+            "status": "completed",
+            "report": report_text.strip(),
+            "finished_at": datetime.utcnow().isoformat() + "Z",
+        }
+    except GroqError as exc:
+        result = {
+            "job_id": job_id,
+            "status": "failed",
+            "error": str(exc),
+            "finished_at": datetime.utcnow().isoformat() + "Z",
+        }
+
+    with job_lock:
+        job_store[job_id] = result
+
+    if webhook_url and result["status"] == "completed":
+        try:
+            import requests
+            requests.post(webhook_url, json=result, timeout=5)
+        except Exception:
+            pass
 
 
-@generate_report_bp.post("")
-@limiter.limit("10 per minute")
+@report_bp.route("/generate-report", methods=["POST"])
 def generate_report_endpoint():
-    body = request.get_json(silent=True)
-    if body is None:
-        return jsonify({"error": "Request body must be valid JSON", "status": 400}), 400
+    payload = request.get_json(force=True, silent=True) or {}
+    title = payload.get("title")
+    context = payload.get("context", "No contextual data provided.")
+    webhook_url = payload.get("webhook_url")
+    if not title:
+        return jsonify({"error": "Missing required field 'title'"}), 400
 
-    result = sanitise_request_body(body)
-    if not result["is_safe"]:
-        return (
-            jsonify(
-                {
-                    "error": result["reason"],
-                    "field": result["field"],
-                    "status": 400,
-                }
-            ),
-            400,
-        )
+    prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "generate_report.txt")
+    with open(prompt_path, encoding="utf-8") as handle:
+        prompt = handle.read().replace("{request}", title).replace("{context}", context)
 
-    text = result["clean_body"].get("text", "").strip()
-    if not text:
-        return jsonify({"error": "Field 'text' is required.", "status": 400}), 400
+    job_id = str(uuid.uuid4())
+    with job_lock:
+        job_store[job_id] = {
+            "job_id": job_id,
+            "status": "queued",
+            "created_at": datetime.utcnow().isoformat() + "Z",
+        }
 
-    wants_stream = request.args.get("stream", "").lower() == "true" or (
-        "text/event-stream" in request.headers.get("Accept", "")
-    )
+    thread = threading.Thread(target=_process_report, args=(job_id, prompt, webhook_url), daemon=True)
+    thread.start()
 
-    if wants_stream:
-        def event_stream():
-            for event in stream_report_events(text):
-                yield event
+    return jsonify({"job_id": job_id, "status": "queued"}), 202
 
-        return Response(
-            event_stream(),
-            mimetype="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "X-Accel-Buffering": "no",
-            },
-        )
 
-    report = generate_report(text)
-    return jsonify(report), 200
+@report_bp.route("/report/<job_id>", methods=["GET"])
+def get_report_endpoint(job_id: str):
+    with job_lock:
+        result = job_store.get(job_id)
+    if result is None:
+        return jsonify({"error": "Unknown job_id"}), 404
+    return jsonify(result)
