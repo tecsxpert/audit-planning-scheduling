@@ -1,45 +1,54 @@
+import os
+
 from flask import Blueprint, jsonify, request
 
-from routes.sanitisation import sanitise_request_body
-from services.ai_workflows import build_rag_context, generate_query_answer
+from services.groq_client import GroqClient, GroqError
+from services.chroma_client import ChromaClient
+from services.cache import AiCache
+from services.utils import make_meta
+
+query_bp = Blueprint("query", __name__)
+client = GroqClient()
+chroma = ChromaClient()
+cache = AiCache()
 
 
-query_bp = Blueprint("query", __name__, url_prefix="/query")
-
-
-@query_bp.post("")
-def query():
-    body = request.get_json(silent=True)
-    if body is None:
-        return jsonify({"error": "Request body must be valid JSON", "status": 400}), 400
-
-    result = sanitise_request_body(body)
-    if not result["is_safe"]:
-        return (
-            jsonify(
-                {
-                    "error": result["reason"],
-                    "field": result["field"],
-                    "status": 400,
-                }
-            ),
-            400,
-        )
-
-    question = result["clean_body"].get("question", "").strip()
+@query_bp.route("/query", methods=["POST"])
+def query_endpoint():
+    payload = request.get_json(force=True, silent=True) or {}
+    question = payload.get("question")
     if not question:
-        return jsonify({"error": "Field 'question' is required.", "status": 400}), 400
+        return jsonify({"error": "Missing required field 'question'"}), 400
 
-    context_items = build_rag_context(question, limit=3)
-    answer = generate_query_answer(question, context_items)
-    return (
-        jsonify(
-            {
-                "question": question,
-                "answer": answer.get("answer", ""),
-                "sources": [item["source"] for item in context_items],
-                "meta": answer.get("meta", {}),
-            }
-        ),
-        200,
-    )
+    cache_key = f"query:{question}"
+    cached = cache.get(cache_key)
+    if cached:
+        cached["meta"]["cached"] = True
+        return jsonify(cached)
+
+    search = chroma.query(question, n_results=3)
+    documents = search.get("documents", []) if isinstance(search, dict) else []
+    context = "\n\n".join([f"Source {idx+1}: {doc}" for idx, doc in enumerate(documents)])
+    prompt_path = os.path.join(os.path.dirname(__file__), "..", "prompts", "query.txt")
+    with open(prompt_path, encoding="utf-8") as handle:
+        prompt = handle.read().replace("{question}", question).replace("{context}", context)
+
+    try:
+        answer = client.generate_response(prompt)
+        response = {
+            "data": {
+                "answer": answer.strip(),
+                "sources": documents,
+            },
+            "meta": make_meta(model_name=client.model_name, response_time_ms=0.0, cached=False),
+        }
+        cache.set(cache_key, response)
+        return jsonify(response)
+    except GroqError:
+        return jsonify({
+            "data": {
+                "answer": "Unable to answer at this time.",
+                "sources": documents,
+            },
+            "meta": make_meta(model_name=client.model_name, response_time_ms=0.0, cached=False, fallback=True),
+        }), 503

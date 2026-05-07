@@ -1,5 +1,25 @@
-.env
-target/
-node_modules/
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.venv/
+
+# Environment variables
+.env
+.env.*
+
+# Local data
 chroma_data/
+chroma_data2/
+pdf_text/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
