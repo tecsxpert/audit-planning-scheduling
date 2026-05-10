@@ -109,3 +109,18 @@ Returns an answer plus the source files used from the local knowledge base.
 cd ai-service
 & "..\.venv\Scripts\python.exe" -m pytest tests -q
 ```
+
+## Demo preparation assets
+
+- [demo_script.md](./demo_script.md)
+- [demo_day_checklist.md](./demo_day_checklist.md)
+- [delivery_notes.md](./delivery_notes.md)
+- [final_ai_qa.md](./final_ai_qa.md)
+
+## Dry run and readiness scripts
+
+```powershell
+cd ai-service
+& "..\.venv\Scripts\python.exe" scripts\run_dry_demo.py
+& "..\.venv\Scripts\python.exe" scripts\groq_readiness_check.py
+```

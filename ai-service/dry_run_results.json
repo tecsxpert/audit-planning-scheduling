@@ -1,0 +1,167 @@
+{
+  "health": {
+    "status_code": 200,
+    "elapsed_ms": 8.31,
+    "body": {
+      "embedding_model_preloaded": true,
+      "message": "AI service is running",
+      "rag_document_count": 10,
+      "rag_seeded": true,
+      "rate_limits": {
+        "default": "30 requests per minute",
+        "generate_report": "10 requests per minute"
+      },
+      "security_headers": {
+        "Content-Security-Policy": "default-src 'self'",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block"
+      },
+      "status": "ok"
+    }
+  },
+  "describe": {
+    "status_code": 200,
+    "elapsed_ms": 57.02,
+    "body": {
+      "context_sources": [
+        "risk_management.txt",
+        "resource_capacity.txt"
+      ],
+      "description": "This audit planning item requires structured review, scheduling alignment, stakeholder coordination, and clear follow-up actions.",
+      "generated_at": "2026-05-10T09:34:38.944245+00:00",
+      "input": "Schedule a high-risk audit with multiple dependencies and a tight deadline.",
+      "meta": {
+        "fallback_reason": "missing_api_key",
+        "generated_at": "2026-05-10T09:34:38.944222+00:00",
+        "is_fallback": true,
+        "model_used": "fallback-template"
+      },
+      "tone": "professional"
+    }
+  },
+  "recommend": {
+    "status_code": 200,
+    "elapsed_ms": 15.59,
+    "body": {
+      "input": "There is a delayed audit with missing evidence and conflicting owners.",
+      "meta": {
+        "fallback_reason": "missing_api_key",
+        "generated_at": "2026-05-10T09:34:38.959611+00:00",
+        "is_fallback": true,
+        "model_used": "fallback-template"
+      },
+      "recommendations": [
+        {
+          "action_type": "plan",
+          "description": "Confirm scope, owners, and target dates for this audit item.",
+          "priority": "high"
+        },
+        {
+          "action_type": "review",
+          "description": "Assess dependencies, risks, and documentation gaps before execution.",
+          "priority": "medium"
+        },
+        {
+          "action_type": "track",
+          "description": "Monitor milestones weekly and escalate blockers early.",
+          "priority": "medium"
+        }
+      ]
+    }
+  },
+  "generate_report": {
+    "status_code": 200,
+    "elapsed_ms": 10.98,
+    "body": {
+      "executive_summary": "This item needs coordinated planning, timeline control, and risk visibility.",
+      "meta": {
+        "fallback_reason": "missing_api_key",
+        "generated_at": "2026-05-10T09:34:38.971162+00:00",
+        "is_fallback": true,
+        "model_used": "fallback-template",
+        "stream_ready": true
+      },
+      "overview": "The report summarises the audit item, major concerns, and practical next steps.",
+      "recommendations": [
+        "Assign a primary owner and due date.",
+        "Review evidence readiness before execution.",
+        "Escalate timeline risk if dependencies remain open."
+      ],
+      "title": "Audit Planning Report",
+      "top_items": [
+        "Confirm audit scope and affected stakeholders.",
+        "Review upcoming deadlines and resource constraints.",
+        "Track unresolved risks or dependencies."
+      ]
+    }
+  },
+  "analyse_document": {
+    "status_code": 200,
+    "elapsed_ms": 1.43,
+    "body": {
+      "findings": [
+        {
+          "finding": "Kickoff delayed. Dependency on finance approval remains open. Evidence not ready.",
+          "insight_type": "risk",
+          "risk_level": "medium"
+        }
+      ],
+      "generated_at": "2026-05-10T09:34:38.972811+00:00",
+      "summary": "Document contains planning signals that should be reviewed for ownership, timing, and dependencies."
+    }
+  },
+  "query": {
+    "status_code": 200,
+    "elapsed_ms": 42.41,
+    "body": {
+      "answer": "Based on the available audit planning knowledge, review scope, dependencies, owners, and deadlines before proceeding.",
+      "meta": {
+        "fallback_reason": "missing_api_key",
+        "generated_at": "2026-05-10T09:34:39.015099+00:00",
+        "is_fallback": true,
+        "model_used": "fallback-template"
+      },
+      "question": "What should be checked first in audit planning?",
+      "sources": [
+        "audit_scope.txt",
+        "audit_timeline.txt",
+        "risk_management.txt"
+      ]
+    }
+  },
+  "batch_process": {
+    "status_code": 200,
+    "elapsed_ms": 203.59,
+    "body": {
+      "results": [
+        {
+          "description": "This audit planning item requires structured review, scheduling alignment, stakeholder coordination, and clear follow-up actions.",
+          "input": "Review overdue internal audit timeline",
+          "meta": {
+            "fallback_reason": "missing_api_key",
+            "generated_at": "2026-05-10T09:34:39.118050+00:00",
+            "is_fallback": true,
+            "model_used": "fallback-template"
+          }
+        },
+        {
+          "description": "This audit planning item requires structured review, scheduling alignment, stakeholder coordination, and clear follow-up actions.",
+          "input": "Escalate missing owner confirmation",
+          "meta": {
+            "fallback_reason": "missing_api_key",
+            "generated_at": "2026-05-10T09:34:39.218885+00:00",
+            "is_fallback": true,
+            "model_used": "fallback-template"
+          }
+        }
+      ]
+    }
+  },
+  "generate_report_stream": {
+    "status_code": 200,
+    "elapsed_ms": 2.38,
+    "mimetype": "text/event-stream",
+    "preview": "data: {\"section\": \"title\", \"content\": \"Audit Planning Report\"}\n\ndata: {\"section\": \"executive_summary\", \"content\": \"This item needs coordinated planning, timeline control, and risk visibility.\"}\n\ndata: {\"section\": \"overview\", \"content\": \"The report summarises the audit item, major concerns, and pract"
+  }
+}

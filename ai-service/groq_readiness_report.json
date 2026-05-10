@@ -1,0 +1,12 @@
+{
+  "groq_api_key_present": false,
+  "checks": {
+    "health_status": 200,
+    "describe_status": 200,
+    "recommend_status": 200,
+    "report_status": 200,
+    "analyse_status": 200,
+    "query_status": 200
+  },
+  "note": "Live Groq output requires a valid GROQ_API_KEY. Without it, the service will use fallback payloads."
+}
